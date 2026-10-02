@@ -1,0 +1,51 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  // bcrypt hash - one-way, never reversible, not readable by admin/dev
+  passwordHash String
+  // Public key (RSA-OAEP, SPKI, base64). Set after the user completes first-login password change.
+  publicKey String?
+  // Private key (PKCS8) encrypted with a key derived from the user's password (AES-GCM, base64).
+  // Server only ever stores the wrapped (encrypted) form - plaintext private key never leaves the browser.
+  encryptedPrivateKey String?
+  keySalt String? // base64 salt for PBKDF2 password -> wrapping-key derivation
+  keyIv   String? // base64 IV for AES-GCM private key wrap
+  mustChangePassword Boolean @default(true)
+  isAdmin Boolean @default(false)
+  createdAt DateTime @default(now())
+  messagesSent Message[] @relation("SenderMessages")
+}
+
+model Message {
+  id String @id @default(cuid())
+  senderId String
+  sender User @relation("SenderMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  // For DM: the id of the other participant. For group: null.
+  recipientId String?
+  isGroup Boolean @default(false) // true => broadcast "everyone" room
+  // base64: ciphertext of the message payload (text bytes, or empty for media-only)
+  encryptedContent String
+  // JSON string: { "<userId>": "<base64 encrypted AES key>" } includes sender + all recipients
+  encryptedKeys String
+  // base64 IV used for AES-GCM content encryption
+  iv String
+  messageType String @default("text") // text | image | voice
+  mediaFilename String? // stored encrypted blob filename in uploads/
+  createdAt DateTime @default(now())
+
+  @@index([recipientId, createdAt])
+  @@index([isGroup, createdAt])
+  @@index([senderId, createdAt])
+}
