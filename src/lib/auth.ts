@@ -9,6 +9,7 @@ const secret = new TextEncoder().encode(process.env.JWT_SECRET || "dev-secret-ch
 export type SessionUser = {
   id: string
   username: string
+  displayName: string | null
   isAdmin: boolean
   mustChangePassword: boolean
   publicKey: string | null
@@ -50,6 +51,7 @@ export async function getSession(): Promise<SessionUser | null> {
   return {
     id: user.id,
     username: user.username,
+    displayName: user.displayName,
     isAdmin: user.isAdmin,
     mustChangePassword: user.mustChangePassword,
     publicKey: user.publicKey,

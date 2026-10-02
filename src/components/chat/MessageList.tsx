@@ -62,10 +62,10 @@ function MessageBubble({
           {msg.senderUsername}
         </span>
       )}
-      <div className={cn("relative flex items-end gap-1", mine ? "flex-row-reverse" : "flex-row")}>
+      <div className={cn("relative flex items-end gap-1 min-w-0", mine ? "flex-row-reverse" : "flex-row")}>
         <div
           className={cn(
-            "max-w-[78%] sm:max-w-[68%] px-3.5 py-2 rounded-2xl text-sm break-words shadow-sm",
+            "min-w-0 max-w-[78%] sm:max-w-[68%] px-3.5 py-2 rounded-2xl text-sm break-words shadow-sm",
             mine && "touch-callout-none",
             mine
               ? "bg-primary text-primary-foreground rounded-br-md"
@@ -74,7 +74,7 @@ function MessageBubble({
           {...(mine ? longPress : {})}
         >
           {msg.messageType === "text" ? (
-            <p className="whitespace-pre-wrap leading-relaxed">{msg.text ?? "🔒"}</p>
+            <p className="whitespace-pre-wrap leading-relaxed [overflow-wrap:anywhere]">{msg.text ?? "🔒"}</p>
           ) : (
             <MediaItem msg={msg} mine={mine} />
           )}

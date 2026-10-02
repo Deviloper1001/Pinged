@@ -1,7 +1,7 @@
 "use client"
 
 import { create } from "zustand"
-import { apiGet, apiPost, apiForm, apiDelete } from "@/lib/api-client"
+import { apiGet, apiPost, apiForm, apiDelete, apiPatch } from "@/lib/api-client"
 import {
   encryptText,
   encryptForRecipients,
@@ -72,6 +72,7 @@ type ChatStore = {
   sendMedia: (file: File | Blob, type: MessageType) => Promise<{ error?: string }>
   deleteMessage: (msgId: string) => Promise<{ error?: string }>
   deleteAccount: (userId: string) => Promise<{ error?: string }>
+  updateProfile: (displayName: string) => Promise<{ error?: string }>
   handleDeletedMessage: (data: {
     id: string
     senderId: string
@@ -117,6 +118,7 @@ async function tryDecrypt(
     id: msg.id,
     senderId: msg.senderId,
     senderUsername: msg.senderUsername,
+    senderName: msg.senderName || msg.senderUsername,
     isGroup: msg.isGroup,
     messageType: msg.messageType,
     createdAt: msg.createdAt,
@@ -360,6 +362,7 @@ export const useChat = create<ChatStore>((set, get) => ({
           id: message.id,
           senderId: message.senderId,
           senderUsername: message.senderUsername,
+          senderName: message.senderName || message.senderUsername,
           isGroup: message.isGroup,
           messageType: "text",
           createdAt: message.createdAt,
@@ -410,6 +413,7 @@ export const useChat = create<ChatStore>((set, get) => ({
           id: message.id,
           senderId: message.senderId,
           senderUsername: message.senderUsername,
+          senderName: message.senderName || message.senderUsername,
           isGroup: message.isGroup,
           messageType: type,
           createdAt: message.createdAt,
@@ -462,6 +466,20 @@ export const useChat = create<ChatStore>((set, get) => ({
   deleteAccount: async (userId) => {
     try {
       await apiDelete(`/api/users/${userId}`)
+      await get().loadUsers()
+      return {}
+    } catch (e) {
+      return { error: (e as Error).message }
+    }
+  },
+
+  updateProfile: async (displayName) => {
+    try {
+      const { user } = await apiPatch<{ user: SessionUser }>(
+        "/api/users/me",
+        { displayName },
+      )
+      set({ user })
       await get().loadUsers()
       return {}
     } catch (e) {

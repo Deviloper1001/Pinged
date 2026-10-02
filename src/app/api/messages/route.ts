@@ -11,11 +11,15 @@ const PAGE_SIZE = 50
 
 function serialize(msg: Awaited<ReturnType<typeof db.message.findFirst>>) {
   if (!msg) return null
+  const senderName = msg.sender?.displayName || msg.sender?.username || "deleted user"
   return {
     id: msg.id,
     senderId: msg.senderId,
     // sender may be null if the sender's account was later deleted
     senderUsername: msg.sender?.username ?? "deleted user",
+    // resolved server-side from the sender's CURRENT display name so renaming
+    // a user updates all their past messages too (retroactive).
+    senderName,
     recipientId: msg.recipientId,
     isGroup: msg.isGroup,
     encryptedContent: msg.encryptedContent,

@@ -20,6 +20,7 @@ export async function POST(req: Request) {
     user: {
       id: user.id,
       username: user.username,
+      displayName: user.displayName,
       isAdmin: user.isAdmin,
       mustChangePassword: user.mustChangePassword,
       publicKey: user.publicKey,

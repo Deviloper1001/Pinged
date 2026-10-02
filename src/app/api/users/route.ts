@@ -10,6 +10,7 @@ export async function GET() {
     select: {
       id: true,
       username: true,
+      displayName: true,
       isAdmin: true,
       publicKey: true,
       mustChangePassword: true,

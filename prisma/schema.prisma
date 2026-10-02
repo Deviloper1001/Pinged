@@ -13,6 +13,8 @@ datasource db {
 model User {
   id        String   @id @default(cuid())
   username  String   @unique
+  // Optional friendly name shown in chats; falls back to username when null.
+  displayName String?
   // bcrypt hash - one-way, never reversible, not readable by admin/dev
   passwordHash String
   // Public key (RSA-OAEP, SPKI, base64). Set after the user completes first-login password change.

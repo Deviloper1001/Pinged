@@ -3,6 +3,7 @@ export type MessageType = "text" | "image" | "voice"
 export type SessionUser = {
   id: string
   username: string
+  displayName: string | null
   isAdmin: boolean
   mustChangePassword: boolean
   publicKey: string | null
@@ -12,6 +13,7 @@ export type SessionUser = {
 export type ConversationUser = {
   id: string
   username: string
+  displayName: string | null
   isAdmin: boolean
   publicKey: string | null
   mustChangePassword: boolean
@@ -22,6 +24,7 @@ export type EncryptedMessage = {
   id: string
   senderId: string
   senderUsername: string
+  senderName: string // displayName || username (resolved server-side, retroactive)
   recipientId: string | null
   isGroup: boolean
   encryptedContent: string
@@ -36,6 +39,7 @@ export type DecryptedMessage = {
   id: string
   senderId: string
   senderUsername: string
+  senderName: string
   isGroup: boolean
   messageType: MessageType
   createdAt: string
