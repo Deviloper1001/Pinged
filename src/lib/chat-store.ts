@@ -1,7 +1,7 @@
 "use client"
 
 import { create } from "zustand"
-import { apiGet, apiPost, apiForm } from "@/lib/api-client"
+import { apiGet, apiPost, apiForm, apiDelete } from "@/lib/api-client"
 import {
   encryptText,
   encryptForRecipients,
@@ -70,6 +70,14 @@ type ChatStore = {
   setMediaUrl: (msgId: string, url: string) => void
   sendText: (text: string) => Promise<{ error?: string }>
   sendMedia: (file: File | Blob, type: MessageType) => Promise<{ error?: string }>
+  deleteMessage: (msgId: string) => Promise<{ error?: string }>
+  deleteAccount: (userId: string) => Promise<{ error?: string }>
+  handleDeletedMessage: (data: {
+    id: string
+    senderId: string
+    isGroup: boolean
+    recipientId: string | null
+  }) => void
   setOnline: (ids: string[]) => void
   setTyping: (userId: string, isTyping: boolean) => void
 }
@@ -425,5 +433,59 @@ export const useChat = create<ChatStore>((set, get) => ({
   setOnline: (ids) => set({ onlineUserIds: ids }),
   setTyping: (userId, isTyping) => {
     set((s) => ({ typing: { ...s.typing, [userId]: isTyping } }))
+  },
+
+  deleteMessage: async (msgId) => {
+    const state = get()
+    const conv = state.selectedConv
+    try {
+      // optimistic: remove from the active conversation immediately
+      set((s) => {
+        const list = s.messagesByConv[conv]
+        if (!list) return s
+        return {
+          messagesByConv: {
+            ...s.messagesByConv,
+            [conv]: list.filter((m) => m.id !== msgId),
+          },
+        }
+      })
+      await apiDelete<{ ok: boolean; id: string }>(`/api/messages/${msgId}`)
+      return {}
+    } catch (e) {
+      // restore on failure
+      await get().loadMessages(conv)
+      return { error: (e as Error).message }
+    }
+  },
+
+  deleteAccount: async (userId) => {
+    try {
+      await apiDelete(`/api/users/${userId}`)
+      await get().loadUsers()
+      return {}
+    } catch (e) {
+      return { error: (e as Error).message }
+    }
+  },
+
+  handleDeletedMessage: (data) => {
+    const myId = get().user?.id
+    if (!myId) return
+    const conv = data.isGroup
+      ? "everyone"
+      : data.senderId === myId
+        ? `dm:${data.recipientId}`
+        : `dm:${data.senderId}`
+    set((s) => {
+      const list = s.messagesByConv[conv]
+      if (!list) return s
+      return {
+        messagesByConv: {
+          ...s.messagesByConv,
+          [conv]: list.filter((m) => m.id !== data.id),
+        },
+      }
+    })
   },
 }))

@@ -1,10 +1,22 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useChat } from "@/lib/chat-store"
 import { MediaItem } from "./MediaItem"
 import { cn } from "@/lib/utils"
-import { ShieldCheck } from "lucide-react"
+import { ShieldCheck, Trash2, Loader2 } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { toast } from "sonner"
 import type { DecryptedMessage } from "@/lib/types"
 
 // Stable empty array so the selector never returns a fresh reference (which
@@ -16,29 +28,88 @@ function fmtTime(iso: string) {
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
 }
 
-function MessageBubble({ msg, mine, showSender }: { msg: DecryptedMessage; mine: boolean; showSender: boolean }) {
+function MessageBubble({
+  msg,
+  mine,
+  showSender,
+}: {
+  msg: DecryptedMessage
+  mine: boolean
+  showSender: boolean
+}) {
+  const deleteMessage = useChat((s) => s.deleteMessage)
+  const [deleting, setDeleting] = useState(false)
+
+  async function doDelete() {
+    setDeleting(true)
+    const res = await deleteMessage(msg.id)
+    setDeleting(false)
+    if (res.error) toast.error(res.error)
+    else toast.success("Message deleted")
+  }
+
   return (
-    <div className={cn("flex flex-col", mine ? "items-end" : "items-start")}>
+    <div className={cn("group flex flex-col", mine ? "items-end" : "items-start")}>
       {showSender && !mine && (
         <span className="text-xs font-medium text-muted-foreground mb-0.5 ml-1">
           {msg.senderUsername}
         </span>
       )}
-      <div
-        className={cn(
-          "max-w-[78%] sm:max-w-[68%] px-3.5 py-2 rounded-2xl text-sm break-words shadow-sm",
-          mine
-            ? "bg-primary text-primary-foreground rounded-br-md"
-            : "bg-card border border-border/60 rounded-bl-md",
-        )}
-      >
-        {msg.messageType === "text" ? (
-          <p className="whitespace-pre-wrap leading-relaxed">{msg.text ?? "🔒"}</p>
-        ) : (
-          <MediaItem msg={msg} mine={mine} />
+      <div className={cn("relative flex items-end gap-1", mine ? "flex-row-reverse" : "flex-row")}>
+        <div
+          className={cn(
+            "max-w-[78%] sm:max-w-[68%] px-3.5 py-2 rounded-2xl text-sm break-words shadow-sm",
+            mine
+              ? "bg-primary text-primary-foreground rounded-br-md"
+              : "bg-card border border-border/60 rounded-bl-md",
+          )}
+        >
+          {msg.messageType === "text" ? (
+            <p className="whitespace-pre-wrap leading-relaxed">{msg.text ?? "🔒"}</p>
+          ) : (
+            <MediaItem msg={msg} mine={mine} />
+          )}
+        </div>
+        {mine && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <button
+                type="button"
+                className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity h-7 w-7 shrink-0 rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                aria-label="Delete message"
+                title="Delete message"
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="h-3.5 w-3.5" />
+                )}
+              </button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete this message?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will remove it from your view and everyone else&apos;s.
+                  {msg.messageType !== "text" && " The attached media will also be erased."}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={doDelete}
+                  disabled={deleting}
+                  className="bg-destructive text-white hover:bg-destructive/90"
+                >
+                  {deleting ? "Deleting…" : "Delete"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         )}
       </div>
-      <span className={cn("text-[10px] text-muted-foreground mt-0.5", mine ? "mr-1" : "ml-1")}>
+      <span className={cn("text-[10px] text-muted-foreground mt-0.5", mine ? "mr-8" : "ml-1")}>
         {fmtTime(msg.createdAt)}
       </span>
     </div>

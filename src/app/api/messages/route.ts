@@ -14,7 +14,8 @@ function serialize(msg: Awaited<ReturnType<typeof db.message.findFirst>>) {
   return {
     id: msg.id,
     senderId: msg.senderId,
-    senderUsername: msg.sender.username,
+    // sender may be null if the sender's account was later deleted
+    senderUsername: msg.sender?.username ?? "deleted user",
     recipientId: msg.recipientId,
     isGroup: msg.isGroup,
     encryptedContent: msg.encryptedContent,
@@ -53,8 +54,9 @@ export async function GET(req: Request) {
     })
   } else if (conversation.startsWith("dm:")) {
     const otherId = conversation.slice(3)
-    const other = await db.user.findUnique({ where: { id: otherId } })
-    if (!other) return NextResponse.json({ error: "User not found" }, { status: 404 })
+    // We don't 404 if the other user was deleted — the requester may still want
+    // to read their own side of the (encrypted) history. The sender username on
+    // the deleted user's messages resolves to null, which the client handles.
     messages = await db.message.findMany({
       where: {
         OR: [

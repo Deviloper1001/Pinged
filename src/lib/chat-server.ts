@@ -151,3 +151,11 @@ export function emitToUsers(userIds: string[], event: string, data: unknown) {
     io.to(`user:${uid}`).emit(event, data)
   }
 }
+
+/** Push an event to every connected user (the "everyone" room). */
+export function emitToAll(event: string, data: unknown) {
+  ensureChatServer()
+  const io = getIo()
+  if (!io) return
+  io.to("everyone").emit(event, data)
+}

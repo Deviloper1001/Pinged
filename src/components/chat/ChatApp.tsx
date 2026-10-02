@@ -17,8 +17,10 @@ export function ChatApp() {
   const users = useChat((s) => s.users)
   const selected = useChat((s) => s.selectedConv)
   const handleIncoming = useChat((s) => s.handleIncoming)
+  const handleDeletedMessage = useChat((s) => s.handleDeletedMessage)
   const setOnline = useChat((s) => s.setOnline)
   const setTyping = useChat((s) => s.setTyping)
+  const loadUsers = useChat((s) => s.loadUsers)
   const loadMessages = useChat((s) => s.loadMessages)
   const [mobileSidebar, setMobileSidebar] = useState(false)
 
@@ -32,12 +34,21 @@ export function ChatApp() {
         if (cancelled) return
         sock = getSocket(token)
         const onMessage = (msg: EncryptedMessage) => void handleIncoming(msg)
+        const onDeleted = (data: {
+          id: string
+          senderId: string
+          isGroup: boolean
+          recipientId: string | null
+        }) => handleDeletedMessage(data)
         const onPresence = (data: { online: string[] }) => setOnline(data.online)
         const onTyping = (data: { userId: string; isTyping: boolean }) =>
           setTyping(data.userId, data.isTyping)
+        const onUsersChanged = () => void loadUsers()
         sock.on("message", onMessage)
+        sock.on("message-deleted", onDeleted)
         sock.on("presence", onPresence)
         sock.on("typing", onTyping)
+        sock.on("users-changed", onUsersChanged)
       } catch (e) {
         console.error("[chat] failed to boot socket", e)
       }
@@ -46,17 +57,30 @@ export function ChatApp() {
       cancelled = true
       if (sock) {
         sock.off("message")
+        sock.off("message-deleted")
         sock.off("presence")
         sock.off("typing")
+        sock.off("users-changed")
       }
     }
-  }, [handleIncoming, setOnline, setTyping])
+  }, [handleIncoming, handleDeletedMessage, setOnline, setTyping, loadUsers])
 
   // load messages when conversation changes (and none loaded yet)
   useEffect(() => {
     const convs = useChat.getState().messagesByConv
     if (!convs[selected]) void loadMessages(selected)
   }, [selected, loadMessages])
+
+  // if the selected DM partner no longer exists (e.g. their account was
+  // deleted), fall back to the Everyone group so the panel isn't orphaned.
+  useEffect(() => {
+    if (selected.startsWith("dm:")) {
+      const partnerId = selected.slice(3)
+      if (users.length > 0 && !users.some((u) => u.id === partnerId)) {
+        useChat.getState().selectConv("everyone")
+      }
+    }
+  }, [selected, users])
 
   const other = selected.startsWith("dm:")
     ? users.find((u) => u.id === selected.slice(3))

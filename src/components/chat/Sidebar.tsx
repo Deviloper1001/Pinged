@@ -5,11 +5,13 @@ import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Wordmark } from "@/components/brand"
 import { AdminUserDialog } from "./AdminUserDialog"
+import { ManageMembersDialog } from "./ManageMembersDialog"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
   Users,
   LogOut,
   UserPlus,
+  UserCog,
   Moon,
   Sun,
   ShieldAlert,
@@ -27,6 +29,7 @@ export function Sidebar() {
   const onlineIds = useChat((s) => s.onlineUserIds)
   const logout = useChat((s) => s.logout)
   const [adminOpen, setAdminOpen] = useState(false)
+  const [manageOpen, setManageOpen] = useState(false)
   const { theme, setTheme } = useTheme()
 
   const others = users.filter((u) => u.id !== user?.id)
@@ -109,13 +112,22 @@ export function Sidebar() {
 
       <div className="border-t border-sidebar-border p-2 space-y-1 shrink-0">
         {user?.isAdmin && (
-          <Button
-            variant="outline"
-            className="w-full justify-start border-dashed"
-            onClick={() => setAdminOpen(true)}
-          >
-            <UserPlus className="h-4 w-4" /> Create account
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              className="w-full justify-start border-dashed"
+              onClick={() => setAdminOpen(true)}
+            >
+              <UserPlus className="h-4 w-4" /> Create account
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-muted-foreground"
+              onClick={() => setManageOpen(true)}
+            >
+              <UserCog className="h-4 w-4" /> Manage members
+            </Button>
+          </>
         )}
         <Button variant="ghost" className="w-full justify-start text-muted-foreground" onClick={() => void logout()}>
           <LogOut className="h-4 w-4" /> Sign out
@@ -127,6 +139,7 @@ export function Sidebar() {
       </div>
 
       <AdminUserDialog open={adminOpen} onOpenChange={setAdminOpen} />
+      <ManageMembersDialog open={manageOpen} onOpenChange={setManageOpen} />
     </aside>
   )
 }

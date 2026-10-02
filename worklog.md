@@ -44,3 +44,26 @@ Stage Summary:
 - Default admin: username `admin`, password `changeme` (forced change on first login).
 - Files of note: `prisma/schema.prisma`, `prisma/seed.ts`, `src/lib/auth.ts`, `src/lib/client-crypto.ts`, `src/lib/crypto-session.ts`, `src/lib/chat-store.ts`, `src/lib/chat-server.ts`, `src/instrumentation.ts`, `src/app/api/**`, `src/components/auth/**`, `src/components/chat/**`, `src/app/page.tsx`.
 - `bun run lint` passes clean.
+
+---
+Task ID: 2
+Agent: Z.ai Code (orchestrator)
+Task: Add sender-initiated message deletion + admin account deletion.
+
+Work Log:
+- Created `DELETE /api/messages/[id]` — verifies the requester is the message sender (403 otherwise), removes the encrypted media blob from disk if present, deletes the DB row, then broadcasts a `message-deleted` socket event to every key-holder of that message so their clients remove it in real time.
+- Created `DELETE /api/users/[id]` — admin-only (403 for non-admins); refuses to delete self or any admin account (400); removes the user's authored media blobs; cascades the user's sent messages (Prisma onDelete: Cascade); broadcasts a `users-changed` event to all online clients.
+- Added `emitToAll` to `src/lib/chat-server.ts` and `notifyAll` to `src/lib/socket-notify.ts` (broadcast to the `everyone` room).
+- Extended the Zustand store: `deleteMessage` (optimistic local removal, restores on failure), `deleteAccount` (calls API + reloads users), and `handleDeletedMessage` (normalises the conversation key via `convKeyFor` so the removed message is found whether you were sender or recipient).
+- MessageList: added a hover-revealed trash button on the sender's own message bubbles, opening an AlertDialog ("Delete this message?") for confirmation. Toasts success/failure.
+- New `ManageMembersDialog` (admin-only): lists all non-admin members with their setup status and a per-member delete button + AlertDialog confirm. Wired a "Manage members" button into the Sidebar (admin only).
+- ChatApp now listens for `message-deleted` (removes from local view) and `users-changed` (reloads the users list + presence). Added a guard that resets an orphaned DM selection (whose partner was deleted) back to the Everyone group.
+- Relaxed the `GET /api/messages` DM path so history with a deleted user is still readable (removed the 404 when the other user no longer exists); `serialize` now returns "deleted user" for a message whose sender was later removed.
+
+Stage Summary:
+- Verified end-to-end via Agent Browser (gateway port 81):
+  - Admin sent a group message, opened the delete confirm dialog, confirmed → message removed from own view ("No messages yet").
+  - Admin created user "alex", opened Manage members, deleted alex → alex disappeared from the sidebar; the dialog then showed "No members to manage yet."
+  - Cross-client real-time delete: admin + jordan both online; admin sent a DM to jordan (both saw it); admin deleted it → it vanished from BOTH screens instantly (jordan's view updated live via the `message-deleted` socket event).
+- `bun run lint` clean. Dev log shows `DELETE /api/messages/... 200` and `DELETE /api/users/... 200`.
+- DB reset back to a fresh `admin / changeme` (forced first-login change) for the user.
