@@ -82,7 +82,8 @@ export function ManageMembersDialog({
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium truncate">{u.username}</div>
+                    <div className="text-sm font-medium truncate">{u.displayName || u.username}</div>
+                    {u.displayName && <span className="text-xs text-muted-foreground truncate">@{u.username}</span>}
                     <div className="text-xs text-muted-foreground">
                       {u.publicKey
                         ? u.mustChangePassword
@@ -98,7 +99,7 @@ export function ManageMembersDialog({
                         size="icon"
                         className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                         disabled={deletingId === u.id}
-                        aria-label={`Delete ${u.username}`}
+                        aria-label={`Delete ${u.displayName || u.username}`}
                       >
                         {deletingId === u.id ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -109,7 +110,7 @@ export function ManageMembersDialog({
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Delete {u.username}?</AlertDialogTitle>
+                        <AlertDialogTitle>Delete {u.displayName || u.username}?</AlertDialogTitle>
                         <AlertDialogDescription>
                           Their account and all messages they sent will be
                           permanently removed. Other members will see them

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import {
   Dialog,
   DialogContent,
@@ -28,10 +28,14 @@ export function EditProfileDialog({
   const [name, setName] = useState("")
   const [busy, setBusy] = useState(false)
 
-  // sync the field with the current display name whenever the dialog opens
-  useEffect(() => {
+  // Reset the field to the current display name when the dialog opens, using
+  // the React-recommended "adjust state during render" pattern (avoids the
+  // setState-in-effect lint rule).
+  const [prevOpen, setPrevOpen] = useState(open)
+  if (open !== prevOpen) {
+    setPrevOpen(open)
     if (open) setName(user?.displayName ?? "")
-  }, [open, user?.displayName])
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()

@@ -6,12 +6,14 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Wordmark } from "@/components/brand"
 import { AdminUserDialog } from "./AdminUserDialog"
 import { ManageMembersDialog } from "./ManageMembersDialog"
+import { EditProfileDialog } from "./EditProfileDialog"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
   Users,
   LogOut,
   UserPlus,
   UserCog,
+  Pencil,
   Moon,
   Sun,
   ShieldAlert,
@@ -31,6 +33,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
   const logout = useChat((s) => s.logout)
   const [adminOpen, setAdminOpen] = useState(false)
   const [manageOpen, setManageOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
   const { theme, setTheme } = useTheme()
 
   const others = users.filter((u) => u.id !== user?.id)
@@ -109,13 +112,19 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-medium truncate">{u.username}</span>
+                    <span className="text-sm font-medium truncate">
+                      {u.displayName || u.username}
+                    </span>
                     {u.isAdmin && (
                       <ShieldAlert className="h-3 w-3 text-primary shrink-0" />
                     )}
                   </div>
-                  <span className="text-xs text-sidebar-foreground/50">
-                    {u.publicKey ? (online ? "online" : "offline") : "needs setup"}
+                  <span className="text-xs text-sidebar-foreground/50 truncate">
+                    {u.displayName
+                      ? `@${u.username}`
+                      : u.publicKey
+                        ? (online ? "online" : "offline")
+                        : "needs setup"}
                   </span>
                 </div>
               </button>
@@ -143,17 +152,25 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
             </Button>
           </>
         )}
+        <Button
+          variant="ghost"
+          className="w-full justify-start text-muted-foreground"
+          onClick={() => setProfileOpen(true)}
+        >
+          <Pencil className="h-4 w-4" /> Edit profile
+        </Button>
         <Button variant="ghost" className="w-full justify-start text-muted-foreground" onClick={() => void logout()}>
           <LogOut className="h-4 w-4" /> Sign out
         </Button>
         <div className="flex items-center gap-2 px-2 pt-1 text-xs text-sidebar-foreground/50">
           <Circle className="h-2 w-2 fill-emerald-500 text-emerald-500" />
-          Signed in as <span className="font-medium text-sidebar-foreground/70">{user?.username}</span>
+          Signed in as <span className="font-medium text-sidebar-foreground/70">{user?.displayName || user?.username}</span>
         </div>
       </div>
 
       <AdminUserDialog open={adminOpen} onOpenChange={setAdminOpen} />
       <ManageMembersDialog open={manageOpen} onOpenChange={setManageOpen} />
+      <EditProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />
     </aside>
   )
 }

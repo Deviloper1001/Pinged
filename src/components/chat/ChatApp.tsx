@@ -87,7 +87,9 @@ export function ChatApp() {
     : null
 
   const headerTitle =
-    selected === "everyone" ? "Everyone" : other?.username ?? "Direct message"
+    selected === "everyone"
+      ? "Everyone"
+      : other?.displayName || other?.username || "Direct message"
   const headerSub =
     selected === "everyone"
       ? "End-to-end encrypted group"

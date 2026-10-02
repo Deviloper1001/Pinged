@@ -59,7 +59,7 @@ function MessageBubble({
     <div className={cn("group flex flex-col", mine ? "items-end" : "items-start")}>
       {showSender && !mine && (
         <span className="text-xs font-medium text-muted-foreground mb-0.5 ml-1">
-          {msg.senderUsername}
+          {msg.senderName || msg.senderUsername}
         </span>
       )}
       <div className={cn("relative flex items-end gap-1 min-w-0", mine ? "flex-row-reverse" : "flex-row")}>
