@@ -31,7 +31,7 @@ export function UnlockScreen() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-background to-accent/40">
+    <div className="min-h-dvh flex flex-col items-center justify-center p-4 bg-gradient-to-b from-background to-accent/40">
       <Card className="w-full max-w-sm shadow-lg border-border/60">
         <CardHeader className="space-y-3 text-center">
           <div className="flex justify-center">

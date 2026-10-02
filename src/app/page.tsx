@@ -28,7 +28,7 @@ export default function Home() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background">
+      <div className="min-h-dvh flex flex-col items-center justify-center gap-4 bg-background">
         <Logo className="h-12 w-12 animate-pulse" />
         <p className="text-sm text-muted-foreground">Loading pinged…</p>
       </div>

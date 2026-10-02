@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { useChat } from "@/lib/chat-store"
 import { MediaItem } from "./MediaItem"
 import { cn } from "@/lib/utils"
+import { useLongPress } from "@/hooks/use-long-press"
 import { ShieldCheck, Trash2, Loader2 } from "lucide-react"
 import {
   AlertDialog,
@@ -14,7 +15,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
 import type { DecryptedMessage } from "@/lib/types"
@@ -39,14 +39,21 @@ function MessageBubble({
 }) {
   const deleteMessage = useChat((s) => s.deleteMessage)
   const [deleting, setDeleting] = useState(false)
+  const [dialogOpen, setDialogOpen] = useState(false)
 
   async function doDelete() {
     setDeleting(true)
     const res = await deleteMessage(msg.id)
     setDeleting(false)
+    setDialogOpen(false)
     if (res.error) toast.error(res.error)
     else toast.success("Message deleted")
   }
+
+  // Press-and-hold (touch) opens the delete confirmation on phones.
+  const longPress = useLongPress(() => {
+    if (mine && !deleting) setDialogOpen(true)
+  })
 
   return (
     <div className={cn("group flex flex-col", mine ? "items-end" : "items-start")}>
@@ -59,10 +66,12 @@ function MessageBubble({
         <div
           className={cn(
             "max-w-[78%] sm:max-w-[68%] px-3.5 py-2 rounded-2xl text-sm break-words shadow-sm",
+            mine && "touch-callout-none",
             mine
               ? "bg-primary text-primary-foreground rounded-br-md"
               : "bg-card border border-border/60 rounded-bl-md",
           )}
+          {...(mine ? longPress : {})}
         >
           {msg.messageType === "text" ? (
             <p className="whitespace-pre-wrap leading-relaxed">{msg.text ?? "🔒"}</p>
@@ -71,47 +80,51 @@ function MessageBubble({
           )}
         </div>
         {mine && (
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <button
-                type="button"
-                className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity h-7 w-7 shrink-0 rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                aria-label="Delete message"
-                title="Delete message"
-                disabled={deleting}
-              >
-                {deleting ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Trash2 className="h-3.5 w-3.5" />
-                )}
-              </button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete this message?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will remove it from your view and everyone else&apos;s.
-                  {msg.messageType !== "text" && " The attached media will also be erased."}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={doDelete}
-                  disabled={deleting}
-                  className="bg-destructive text-white hover:bg-destructive/90"
-                >
-                  {deleting ? "Deleting…" : "Delete"}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <button
+            type="button"
+            // hidden on pure-touch devices (long-press is used there);
+            // hover/focus reveals it on desktop.
+            className="opacity-0 group-hover:opacity-100 focus:opacity-100 [@media(hover:none)]:hidden transition-opacity h-7 w-7 shrink-0 rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            onClick={() => setDialogOpen(true)}
+            aria-label="Delete message"
+            title="Delete message"
+            disabled={deleting}
+          >
+            {deleting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Trash2 className="h-3.5 w-3.5" />
+            )}
+          </button>
         )}
       </div>
-      <span className={cn("text-[10px] text-muted-foreground mt-0.5", mine ? "mr-8" : "ml-1")}>
+      <span className={cn("text-[10px] text-muted-foreground mt-0.5", mine ? "mr-1 sm:mr-8" : "ml-1")}>
         {fmtTime(msg.createdAt)}
       </span>
+
+      {mine && (
+        <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this message?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will remove it from your view and everyone else&apos;s.
+                {msg.messageType !== "text" && " The attached media will also be erased."}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={doDelete}
+                disabled={deleting}
+                className="bg-destructive text-white hover:bg-destructive/90"
+              >
+                {deleting ? "Deleting…" : "Delete"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   )
 }

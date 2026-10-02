@@ -158,3 +158,11 @@
 .recording-pulse {
   animation: pulse-ring 1.4s infinite;
 }
+
+/* Suppress the iOS long-press callout / text-selection menu so the custom
+   press-and-hold delete gesture feels native. */
+.touch-callout-none {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}

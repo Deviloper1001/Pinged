@@ -8,7 +8,7 @@ import { Sidebar } from "./Sidebar"
 import { MessageList } from "./MessageList"
 import { MessageComposer } from "./MessageComposer"
 import type { EncryptedMessage } from "@/lib/types"
-import { Menu, ShieldCheck, X, Lock } from "lucide-react"
+import { Menu, ShieldCheck, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -96,7 +96,7 @@ export function ChatApp() {
         : "Waiting for member to set up their key"
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background">
+    <div className="flex h-dvh w-full overflow-hidden bg-background">
       {/* Desktop sidebar */}
       <div className="hidden md:flex md:w-72 lg:w-80 shrink-0">
         <Sidebar />
@@ -110,15 +110,7 @@ export function ChatApp() {
             onClick={() => setMobileSidebar(false)}
           />
           <div className="absolute left-0 top-0 h-full w-80 max-w-[85%] shadow-xl">
-            <Sidebar />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-3 right-2 h-8 w-8"
-              onClick={() => setMobileSidebar(false)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            <Sidebar onClose={() => setMobileSidebar(false)} />
           </div>
         </div>
       )}

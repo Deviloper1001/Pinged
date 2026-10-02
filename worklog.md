@@ -67,3 +67,21 @@ Stage Summary:
   - Cross-client real-time delete: admin + jordan both online; admin sent a DM to jordan (both saw it); admin deleted it → it vanished from BOTH screens instantly (jordan's view updated live via the `message-deleted` socket event).
 - `bun run lint` clean. Dev log shows `DELETE /api/messages/... 200` and `DELETE /api/users/... 200`.
 - DB reset back to a fresh `admin / changeme` (forced first-login change) for the user.
+
+---
+Task ID: 3
+Agent: Z.ai Code (orchestrator)
+Task: Three mobile UX fixes: (1) long-press to delete on phones, (2) theme button collides with close-sidebar button on phone, (3) website too tall on phone — have to scroll even without chats.
+
+Work Log:
+- (1) Long-press to delete: created `src/hooks/use-long-press.ts` (450ms press-and-hold gesture; cancels on scroll/touchmove; suppresses the synthetic click after a long-press). Rewrote `MessageBubble` in `MessageList.tsx` to use a controlled `AlertDialog` (`open`/`onOpenChange` state) instead of `AlertDialogTrigger`, so it can be opened programmatically. Attached the long-press touch handlers to the sender's own bubble. Added a `.touch-callout-none` CSS class (`-webkit-touch-callout:none`) so iOS doesn't show its native long-press callout. The hover-revealed trash button is kept for desktop but hidden on pure-touch devices via `[@media(hover:none)]:hidden`, so there's no empty gap on phones.
+- (2) Theme/close collision: refactored `Sidebar` to accept an optional `onClose` prop; when provided (mobile drawer), it renders a close (X) button inside the header's flex row next to the theme toggle — laid out side-by-side instead of absolutely-positioned on top of it. Removed the old absolute `top-3 right-2` close button from `ChatApp`'s mobile drawer. Verified the two buttons' bounding boxes no longer overlap (theme at x=237, close at x=271, 2px gap).
+- (3) Viewport height: replaced `h-screen`→`h-dvh` on the chat root (`ChatApp`) and `min-h-screen`→`min-h-dvh` on all auth screens + the loading screen. `100dvh` (dynamic viewport height) accounts for mobile browser chrome that shows/hides, so the app fits the visible viewport with no overflow. Added a `viewport` export in `layout.tsx` with `viewportFit: "cover"` for iOS safe-area support. Verified `window.innerHeight` (844) now equals `document.scrollHeight` (844) on an emulated iPhone 14 — no scrolling needed.
+
+Stage Summary:
+- Verified via Agent Browser with iPhone 14 device emulation (gateway port 81):
+  - Viewport height: innerHeight === scrollHeight (844 === 844), no overflow/scroll.
+  - Long-press: dispatched a real TouchEvent sequence (touchstart → 450ms hold → touchend) on the sender's bubble → the "Delete this message?" AlertDialog opened → confirmed → message removed ("No messages yet").
+  - Theme/close: both buttons present in the mobile sidebar header, bounding boxes adjacent (no overlap).
+- `bun run lint` clean. Dev log shows `DELETE /api/messages/... 200`.
+- DB reset back to a fresh `admin / changeme` (forced first-login change) for the user.

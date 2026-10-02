@@ -16,12 +16,13 @@ import {
   Sun,
   ShieldAlert,
   Circle,
+  X,
 } from "lucide-react"
 import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
 
-export function Sidebar() {
+export function Sidebar({ onClose }: { onClose?: () => void }) {
   const user = useChat((s) => s.user)
   const users = useChat((s) => s.users)
   const selected = useChat((s) => s.selectedConv)
@@ -36,17 +37,30 @@ export function Sidebar() {
 
   return (
     <aside className="flex flex-col h-full w-full bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
-      <div className="flex items-center justify-between px-4 h-16 border-b border-sidebar-border shrink-0">
+      <div className="flex items-center justify-between gap-1 px-4 h-16 border-b border-sidebar-border shrink-0">
         <Wordmark />
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 text-sidebar-foreground/70"
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          aria-label="Toggle theme"
-        >
-          {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-        </Button>
+        <div className="flex items-center gap-0.5">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-sidebar-foreground/70"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            aria-label="Toggle theme"
+          >
+            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Button>
+          {onClose && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-sidebar-foreground/70 md:hidden"
+              onClick={onClose}
+              aria-label="Close sidebar"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
 
       <ScrollArea className="flex-1 scroll-thin">
