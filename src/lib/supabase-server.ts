@@ -21,10 +21,15 @@ let cached: SupabaseClient | null = null
 export function getSupabaseAdmin(): SupabaseClient {
   if (cached) return cached
   const url = process.env.SUPABASE_URL || ""
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ""
+  // Accept both the legacy "service_role key" name and the newer Supabase
+  // "secret key" name — they're the same key (server-side, bypasses RLS).
+  const serviceKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_SECRET_KEY ||
+    ""
   if (!url || !serviceKey) {
     throw new Error(
-      "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY. Set these in your environment.",
+      "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY (a.k.a. SUPABASE_SECRET_KEY). Set these in your environment.",
     )
   }
   cached = createClient(url, serviceKey, {
