@@ -2,7 +2,6 @@ import { cn } from "@/lib/utils"
 
 export function Logo({ className }: { className?: string }) {
   return (
-    // eslint-disable-next-line @next/next/no-img-element
     <img
       src="/logo.svg"
       alt="pinged logo"
