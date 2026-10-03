@@ -67,6 +67,7 @@ function MessageBubble({
           className={cn(
             "min-w-0 max-w-[62.5vw] sm:max-w-[62.5%] px-4 py-2.5 rounded-3xl text-[15px] leading-snug break-words shadow-sm",
             mine && "touch-callout-none",
+            msg.pending && "opacity-60",
             mine
               ? "bg-primary text-primary-foreground rounded-br-lg"
               : "bg-card border border-border/60 rounded-bl-lg",

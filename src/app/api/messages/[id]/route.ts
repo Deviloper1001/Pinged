@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { NextResponse, after } from "next/server"
 import { db } from "@/lib/db"
 import { getSession } from "@/lib/auth"
 import { broadcastMessageDeleted } from "@/lib/socket-notify"
@@ -35,15 +35,16 @@ export async function DELETE(
   await db.message.delete({ where: { id } })
 
   // broadcast to the conversation channel so every participant removes it
+  // (in the background — don't block the response)
   const channel = msg.isGroup
     ? "everyone"
     : `dm:${[msg.senderId, msg.recipientId!].sort().join(":")}`
-  await broadcastMessageDeleted(channel, {
+  after(() => broadcastMessageDeleted(channel, {
     id: msg.id,
     senderId: msg.senderId,
     isGroup: msg.isGroup,
     recipientId: msg.recipientId,
-  })
+  }))
 
   return NextResponse.json({ ok: true, id })
 }

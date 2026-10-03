@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { NextResponse, after } from "next/server"
 import { db } from "@/lib/db"
 import { getSession } from "@/lib/auth"
 import { uploadMediaBlob } from "@/lib/uploads"
@@ -159,14 +159,15 @@ export async function POST(req: Request) {
   })
 
   // Broadcast to the conversation's Realtime channel so all participants
-  // receive the new message instantly. The channel name is deterministic:
-  //  - group:  "everyone"
-  //  - DM:     "dm:<sorted participant ids>"
+  // receive the new message. Run it in the BACKGROUND (after()) so the HTTP
+  // response returns immediately — the sender gets fast feedback and other
+  // clients still receive the broadcast within a few hundred ms.
+  // `after()` keeps the serverless function alive briefly to complete it.
   const channel = isGroup
     ? "everyone"
     : `dm:${[session.id, recipientId!].sort().join(":")}`
   const payload = serialize(message)
-  await broadcastMessage(channel, payload)
+  after(() => broadcastMessage(channel, payload))
 
   return NextResponse.json({ message: payload })
 }

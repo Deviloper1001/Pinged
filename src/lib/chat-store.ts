@@ -337,9 +337,34 @@ export const useChat = create<ChatStore>((set, get) => ({
     const state = get()
     const conv = state.selectedConv
     const myId = state.user!.id
+    // Declared outside try so the catch block can remove it on failure.
+    const tempId = "temp-" + crypto.randomUUID()
     try {
       const recipients = await buildRecipients(conv, state.users, myId)
       if (recipients.length === 0) return { error: "No recipients available" }
+
+      // OPTIMISTIC UI: show the message instantly with a temp ID + pending flag.
+      // The encryption happens in the background; the user sees immediate feedback.
+      const myName = state.user?.displayName || state.user?.username || "me"
+      const optimistic: DecryptedMessage = {
+        id: tempId,
+        senderId: myId,
+        senderUsername: state.user!.username,
+        senderName: myName,
+        isGroup: conv === "everyone",
+        messageType: "text",
+        createdAt: new Date().toISOString(),
+        text,
+        pending: true,
+      }
+      set((s) => {
+        const list = s.messagesByConv[conv] || []
+        return {
+          messagesByConv: { ...s.messagesByConv, [conv]: [...list, optimistic] },
+        }
+      })
+
+      // Encrypt + POST in the background
       const payload = await encryptText(text, recipients)
       const form = new FormData()
       form.append("messageType", "text")
@@ -355,28 +380,41 @@ export const useChat = create<ChatStore>((set, get) => ({
         "/api/messages",
         form,
       )
-      // We already know the plaintext; add locally (dedupe vs socket).
-      const existing = get().messagesByConv[conv]
-      if (!existing?.some((m) => m.id === message.id)) {
-        const dm: DecryptedMessage = {
-          id: message.id,
-          senderId: message.senderId,
-          senderUsername: message.senderUsername,
-          senderName: message.senderName || message.senderUsername,
-          isGroup: message.isGroup,
-          messageType: "text",
-          createdAt: message.createdAt,
-          text,
+
+      // Replace the temp message with the real one (clears pending flag).
+      // The real ID means the realtime broadcast (which arrives a moment later)
+      // will be deduped by handleIncoming instead of double-adding.
+      set((s) => {
+        const list = s.messagesByConv[conv] || []
+        return {
+          messagesByConv: {
+            ...s.messagesByConv,
+            [conv]: list.map((m) =>
+              m.id === tempId
+                ? {
+                    ...m,
+                    id: message.id,
+                    createdAt: message.createdAt,
+                    pending: false,
+                  }
+                : m,
+            ),
+          },
         }
-        set((s) => {
-          const list = s.messagesByConv[conv] || []
-          return {
-            messagesByConv: { ...s.messagesByConv, [conv]: [...list, dm] },
-          }
-        })
-      }
+      })
       return {}
     } catch (e) {
+      // Remove the optimistic message on failure
+      set((s) => {
+        const list = s.messagesByConv[conv]
+        if (!list) return s
+        return {
+          messagesByConv: {
+            ...s.messagesByConv,
+            [conv]: list.filter((m) => m.id !== tempId),
+          },
+        }
+      })
       return { error: (e as Error).message }
     }
   },

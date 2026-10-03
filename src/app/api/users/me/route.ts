@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { NextResponse, after } from "next/server"
 import { db } from "@/lib/db"
 import { getSession } from "@/lib/auth"
 import { broadcastUsersChanged } from "@/lib/socket-notify"
@@ -34,8 +34,8 @@ export async function PATCH(req: Request) {
     },
   })
 
-  // tell everyone to refresh their member list (so DM sidebars + name labels update live)
-  await broadcastUsersChanged()
+  // tell everyone to refresh their member list (background — don't block)
+  after(() => broadcastUsersChanged())
 
   return NextResponse.json({ user: updated })
 }

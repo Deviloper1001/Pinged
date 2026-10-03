@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { NextResponse, after } from "next/server"
 import { db } from "@/lib/db"
 import { getSession } from "@/lib/auth"
 import { deleteMediaBlob } from "@/lib/uploads"
@@ -54,7 +54,8 @@ export async function DELETE(
   await db.user.delete({ where: { id } })
 
   // tell every online client to refresh their member list + presence
-  await broadcastUsersChanged()
+  // (background — don't block the response)
+  after(() => broadcastUsersChanged())
 
   return NextResponse.json({ ok: true, id })
 }
