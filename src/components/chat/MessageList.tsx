@@ -58,23 +58,23 @@ function MessageBubble({
   return (
     <div className={cn("group flex flex-col", mine ? "items-end" : "items-start")}>
       {showSender && !mine && (
-        <span className="text-xs font-medium text-muted-foreground mb-0.5 ml-1">
+        <span className="text-xs font-semibold text-muted-foreground mb-1 ml-2">
           {msg.senderName || msg.senderUsername}
         </span>
       )}
-      <div className={cn("relative flex items-end gap-1 min-w-0", mine ? "flex-row-reverse" : "flex-row")}>
+      <div className={cn("relative flex items-end gap-1.5 min-w-0", mine ? "flex-row-reverse" : "flex-row")}>
         <div
           className={cn(
-            "min-w-0 max-w-[78%] sm:max-w-[68%] px-3.5 py-2 rounded-2xl text-sm break-words shadow-sm",
+            "min-w-0 max-w-[82%] sm:max-w-[72%] px-4 py-2.5 rounded-3xl text-[15px] leading-snug break-words shadow-sm",
             mine && "touch-callout-none",
             mine
-              ? "bg-primary text-primary-foreground rounded-br-md"
-              : "bg-card border border-border/60 rounded-bl-md",
+              ? "bg-primary text-primary-foreground rounded-br-lg"
+              : "bg-card border border-border/60 rounded-bl-lg",
           )}
           {...(mine ? longPress : {})}
         >
           {msg.messageType === "text" ? (
-            <p className="whitespace-pre-wrap leading-relaxed [overflow-wrap:anywhere]">{msg.text ?? "🔒"}</p>
+            <p className="whitespace-pre-wrap [overflow-wrap:anywhere]">{msg.text ?? "🔒"}</p>
           ) : (
             <MediaItem msg={msg} mine={mine} />
           )}
@@ -84,21 +84,21 @@ function MessageBubble({
             type="button"
             // hidden on pure-touch devices (long-press is used there);
             // hover/focus reveals it on desktop.
-            className="opacity-0 group-hover:opacity-100 focus:opacity-100 [@media(hover:none)]:hidden transition-opacity h-7 w-7 shrink-0 rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            className="opacity-0 group-hover:opacity-100 focus:opacity-100 [@media(hover:none)]:hidden transition-opacity h-8 w-8 shrink-0 rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10"
             onClick={() => setDialogOpen(true)}
             aria-label="Delete message"
             title="Delete message"
             disabled={deleting}
           >
             {deleting ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Trash2 className="h-3.5 w-3.5" />
+              <Trash2 className="h-4 w-4" />
             )}
           </button>
         )}
       </div>
-      <span className={cn("text-[10px] text-muted-foreground mt-0.5", mine ? "mr-1 sm:mr-8" : "ml-1")}>
+      <span className={cn("text-[11px] text-muted-foreground mt-1", mine ? "mr-1 sm:mr-9" : "ml-2")}>
         {fmtTime(msg.createdAt)}
       </span>
 
@@ -169,7 +169,7 @@ export function MessageList() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto scroll-thin px-3 sm:px-5 py-4 space-y-2.5">
+    <div className="flex-1 overflow-y-auto scroll-thin px-3 sm:px-5 py-4 space-y-3.5">
       {messages.map((m) => (
         <MessageBubble
           key={m.id}

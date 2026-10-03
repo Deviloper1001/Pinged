@@ -125,3 +125,25 @@ Stage Summary:
   - Text wrapping: long "aaaa..." string (90+ chars) constrained to 626px bubble, doesn't overflow 1280px viewport.
 - `bun run lint` clean. All API endpoints return 200 (no more 500).
 - Dev server is running via double-fork daemon (survives Bash tool exits).
+
+---
+Task ID: 5
+Agent: Z.ai Code (orchestrator)
+Task: Make the text message bubbles bigger (reference other messaging apps).
+
+Work Log:
+- Referenced iMessage / Telegram / WhatsApp conventions for bubble sizing and applied an upgrade across MessageList + MediaItem.
+- Font size: text-sm (14px) -> text-[15px] for better readability (matches iMessage/Telegram body text).
+- Padding: px-3.5 py-2 (14/8) -> px-4 py-2.5 (16/10) for more breathing room inside the bubble.
+- Max width: max-w-[78%] sm:max-w-[68%] -> max-w-[82%] sm:max-w-[72%] so longer messages get more room before wrapping.
+- Border radius: rounded-2xl (16px) -> rounded-3xl (24px) for a softer, more modern pill shape; tail corner rounded-br-md/rounded-bl-md -> rounded-br-lg/rounded-bl-lg to match.
+- Line-height: leading-relaxed -> leading-snug (tighter multi-line, matches chat apps).
+- Message spacing: space-y-2.5 -> space-y-3.5 so bigger bubbles have clearer separation.
+- Sender label: text-xs font-medium -> text-xs font-semibold, ml-1 -> ml-2 (aligns with bubble's inner left edge).
+- Timestamp: text-[10px] -> text-[11px], mt-0.5 -> mt-1, mr-8/ml-1 -> mr-9/ml-2 (aligns with bubble edges).
+- Delete button: h-7 w-7 -> h-8 w-8 (touch target), icon h-3.5 -> h-4, gap-1 -> gap-1.5.
+- MediaItem: image max-h-72 -> max-h-96, rounded-lg -> rounded-xl; voice note min-w-[200px] -> min-w-[220px], audio h-9 -> h-10, rounded-lg -> rounded-xl (consistent with bigger bubbles).
+
+Stage Summary:
+- Verified via Agent Browser: computed styles confirm font=15px, padding=10px 16px; short/long/unbroken messages all render with proper wrapping and no viewport overflow. Screenshots captured for desktop + mobile (iPhone 14). Lint clean.
+- DB reset back to a fresh admin / pass (forced first-login change).

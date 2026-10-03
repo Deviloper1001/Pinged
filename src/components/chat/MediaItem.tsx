@@ -52,14 +52,14 @@ export function MediaItem({ msg, mine }: { msg: DecryptedMessage; mine: boolean 
           <img
             src={msg.mediaUrl}
             alt="shared image"
-            className="max-w-full max-h-72 rounded-lg border border-border/50"
+            className="max-w-full max-h-96 rounded-xl border border-border/50"
           />
         </a>
       )
     }
     return (
-      <div className={`flex items-center gap-3 rounded-lg ${mine ? "bg-primary-foreground/10" : "bg-background"} px-3 py-2 min-w-[200px]`}>
-        <audio controls src={msg.mediaUrl} className="h-9 w-full" />
+      <div className={`flex items-center gap-3 rounded-xl ${mine ? "bg-primary-foreground/10" : "bg-background"} px-3 py-2 min-w-[220px]`}>
+        <audio controls src={msg.mediaUrl} className="h-10 w-full" />
         <Mic className="h-4 w-4 shrink-0 text-muted-foreground" />
       </div>
     )
