@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "@/lib/supabase-server"
+import { getSupabaseAdmin } from "@/lib/supabase-server"
 
 /**
  * Broadcast an event to a Supabase Realtime channel. Browser clients subscribed
@@ -13,10 +13,9 @@ export async function broadcast(
   payload: unknown,
 ): Promise<void> {
   try {
+    const supabaseAdmin = getSupabaseAdmin()
     const ch = supabaseAdmin.channel(channel)
     await ch.send({ type: "broadcast", event, payload })
-    // Supabase channels are cheap to create but should be removed after send
-    // on the server to avoid leaking. The broadcast itself is fire-and-forget.
     supabaseAdmin.removeChannel(ch)
   } catch (e) {
     console.error("[broadcast] failed", e)

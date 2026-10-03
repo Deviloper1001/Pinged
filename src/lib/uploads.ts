@@ -1,4 +1,4 @@
-import { supabaseAdmin, MEDIA_BUCKET } from "@/lib/supabase-server"
+import { getSupabaseAdmin, MEDIA_BUCKET } from "@/lib/supabase-server"
 import crypto from "crypto"
 
 /**
@@ -12,8 +12,8 @@ export async function uploadMediaBlob(
   bytes: Uint8Array | Buffer,
 ): Promise<string> {
   const filename = crypto.randomUUID()
-  const { error } = await supabaseAdmin.storage
-    .from(MEDIA_BUCKET)
+  const { error } = await getSupabaseAdmin()
+    .storage.from(MEDIA_BUCKET)
     .upload(filename, bytes, { contentType: "application/octet-stream" })
   if (error) throw new Error(`Upload failed: ${error.message}`)
   return filename
@@ -24,8 +24,8 @@ export async function downloadMediaBlob(
 ): Promise<Uint8Array | null> {
   // Only allow our own UUID-style filenames — no path traversal.
   if (!/^[a-f0-9-]{36}$/i.test(filename)) return null
-  const { data, error } = await supabaseAdmin.storage
-    .from(MEDIA_BUCKET)
+  const { data, error } = await getSupabaseAdmin()
+    .storage.from(MEDIA_BUCKET)
     .download(filename)
   if (error || !data) return null
   // data is a Blob; convert to Uint8Array
@@ -35,5 +35,5 @@ export async function downloadMediaBlob(
 
 export async function deleteMediaBlob(filename: string): Promise<void> {
   if (!/^[a-f0-9-]{36}$/i.test(filename)) return
-  await supabaseAdmin.storage.from(MEDIA_BUCKET).remove([filename])
+  await getSupabaseAdmin().storage.from(MEDIA_BUCKET).remove([filename])
 }
