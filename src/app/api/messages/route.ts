@@ -1,11 +1,8 @@
 import { NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { getSession } from "@/lib/auth"
-import { ensureUploadDir, UPLOAD_DIR } from "@/lib/uploads"
-import { notifyUsers } from "@/lib/socket-notify"
-import { promises as fs } from "fs"
-import path from "path"
-import crypto from "crypto"
+import { uploadMediaBlob } from "@/lib/uploads"
+import { broadcastMessage } from "@/lib/socket-notify"
 
 const PAGE_SIZE = 50
 
@@ -143,10 +140,8 @@ export async function POST(req: Request) {
 
   let mediaFilename: string | null = null
   if (media && media.size > 0) {
-    await ensureUploadDir()
-    mediaFilename = crypto.randomUUID()
     const buffer = Buffer.from(await media.arrayBuffer())
-    await fs.writeFile(path.join(UPLOAD_DIR, mediaFilename), buffer)
+    mediaFilename = await uploadMediaBlob(buffer)
   }
 
   const message = await db.message.create({
@@ -160,13 +155,18 @@ export async function POST(req: Request) {
       messageType,
       mediaFilename,
     },
-    include: { sender: { select: { username: true } } },
+    include: { sender: { select: { username: true, displayName: true } } },
   })
 
-  // Notify everyone who has a key for this message (sender + recipients).
-  const targetUserIds = Object.keys(keyMap)
+  // Broadcast to the conversation's Realtime channel so all participants
+  // receive the new message instantly. The channel name is deterministic:
+  //  - group:  "everyone"
+  //  - DM:     "dm:<sorted participant ids>"
+  const channel = isGroup
+    ? "everyone"
+    : `dm:${[session.id, recipientId!].sort().join(":")}`
   const payload = serialize(message)
-  await notifyUsers(targetUserIds, "message", payload)
+  await broadcastMessage(channel, payload)
 
   return NextResponse.json({ message: payload })
 }

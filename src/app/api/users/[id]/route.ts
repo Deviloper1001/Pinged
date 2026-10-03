@@ -1,15 +1,13 @@
 import { NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { getSession } from "@/lib/auth"
-import { UPLOAD_DIR } from "@/lib/uploads"
-import { notifyAll } from "@/lib/socket-notify"
-import { promises as fs } from "fs"
-import path from "path"
+import { deleteMediaBlob } from "@/lib/uploads"
+import { broadcastUsersChanged } from "@/lib/socket-notify"
 
 // Admin-only: delete a member account. The account's sent messages cascade
 // (per the Prisma onDelete: Cascade relation). Media blobs authored by the
-// deleted user are also removed from disk. The admin account cannot delete
-// itself or any other admin account.
+// deleted user are also removed from Supabase Storage. The admin account
+// cannot delete itself or any other admin account.
 export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -38,7 +36,7 @@ export async function DELETE(
     )
   }
 
-  // remove this user's authored media blobs before the rows cascade-delete
+  // remove this user's authored media blobs from Supabase Storage before cascade
   const ownMedia = await db.message.findMany({
     where: { senderId: id, NOT: { mediaFilename: null } },
     select: { mediaFilename: true },
@@ -46,7 +44,7 @@ export async function DELETE(
   for (const m of ownMedia) {
     if (m.mediaFilename) {
       try {
-        await fs.unlink(path.join(UPLOAD_DIR, m.mediaFilename))
+        await deleteMediaBlob(m.mediaFilename)
       } catch {
         /* ignore */
       }
@@ -56,7 +54,7 @@ export async function DELETE(
   await db.user.delete({ where: { id } })
 
   // tell every online client to refresh their member list + presence
-  await notifyAll("users-changed", { deletedId: id })
+  await broadcastUsersChanged()
 
   return NextResponse.json({ ok: true, id })
 }

@@ -30,8 +30,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files (keep .env.example committed as documentation)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -52,3 +53,15 @@ prompt
 server.log
 # Skills directory
 /skills/
+
+# local SQLite database + uploaded media
+/db/
+/uploads/
+/upload/
+/download/
+
+# z.ai sandbox artifacts
+.zscripts/
+Caddyfile
+worklog.md
+pinged-chat.png

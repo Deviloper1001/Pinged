@@ -76,9 +76,3 @@ export async function clearSessionCookie() {
 }
 
 export const SESSION_COOKIE = COOKIE_NAME
-
-// Used to authenticate to the socket.io mini-service.
-export function socketTokenFor(userId: string) {
-  // Reuse the same JWT mechanism so the socket service can verify with the same secret.
-  return signToken(userId)
-}

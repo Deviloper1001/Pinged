@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react"
 import { useChat } from "@/lib/chat-store"
-import { getSocket, disconnectSocket } from "@/lib/socket-client"
-import { apiGet } from "@/lib/api-client"
+import { useRealtime } from "@/hooks/use-realtime"
+import { usePresence } from "@/hooks/use-presence"
 import { Sidebar } from "./Sidebar"
 import { MessageList } from "./MessageList"
 import { MessageComposer } from "./MessageComposer"
@@ -24,46 +24,18 @@ export function ChatApp() {
   const loadMessages = useChat((s) => s.loadMessages)
   const [mobileSidebar, setMobileSidebar] = useState(false)
 
-  // boot socket connection + listeners
-  useEffect(() => {
-    let cancelled = false
-    let sock: ReturnType<typeof getSocket> | null = null
-    ;(async () => {
-      try {
-        const { token } = await apiGet<{ token: string }>("/api/auth/socket-token")
-        if (cancelled) return
-        sock = getSocket(token)
-        const onMessage = (msg: EncryptedMessage) => void handleIncoming(msg)
-        const onDeleted = (data: {
-          id: string
-          senderId: string
-          isGroup: boolean
-          recipientId: string | null
-        }) => handleDeletedMessage(data)
-        const onPresence = (data: { online: string[] }) => setOnline(data.online)
-        const onTyping = (data: { userId: string; isTyping: boolean }) =>
-          setTyping(data.userId, data.isTyping)
-        const onUsersChanged = () => void loadUsers()
-        sock.on("message", onMessage)
-        sock.on("message-deleted", onDeleted)
-        sock.on("presence", onPresence)
-        sock.on("typing", onTyping)
-        sock.on("users-changed", onUsersChanged)
-      } catch (e) {
-        console.error("[chat] failed to boot socket", e)
-      }
-    })()
-    return () => {
-      cancelled = true
-      if (sock) {
-        sock.off("message")
-        sock.off("message-deleted")
-        sock.off("presence")
-        sock.off("typing")
-        sock.off("users-changed")
-      }
-    }
-  }, [handleIncoming, handleDeletedMessage, setOnline, setTyping, loadUsers])
+  // Realtime subscriptions: new messages, deletions, typing, user-list changes
+  useRealtime({
+    onMessage: (msg) => void handleIncoming(msg),
+    onDeleted: (data) => handleDeletedMessage(data),
+    onTyping: (data) => setTyping(data.userId, data.isTyping),
+    onUsersChanged: () => void loadUsers(),
+    myId: user?.id ?? "",
+    activeConv: selected,
+  })
+
+  // Presence (heartbeat polling — works on serverless)
+  usePresence(user?.id, setOnline)
 
   // load messages when conversation changes (and none loaded yet)
   useEffect(() => {

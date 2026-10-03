@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { getSession } from "@/lib/auth"
-import { notifyAll } from "@/lib/socket-notify"
+import { broadcastUsersChanged } from "@/lib/socket-notify"
 
 // Update the signed-in user's own profile (currently: display name).
 // The display name is shown in chats instead of the username handle; it's
@@ -35,7 +35,7 @@ export async function PATCH(req: Request) {
   })
 
   // tell everyone to refresh their member list (so DM sidebars + name labels update live)
-  await notifyAll("users-changed", { changedId: session.id })
+  await broadcastUsersChanged()
 
   return NextResponse.json({ user: updated })
 }

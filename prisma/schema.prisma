@@ -6,8 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")      // pooled connection (PgBouncer) - app runtime
+  directUrl = env("DIRECT_URL")        // direct connection - migrations / prisma db push
 }
 
 model User {
@@ -27,6 +28,8 @@ model User {
   mustChangePassword Boolean @default(true)
   isAdmin Boolean @default(false)
   createdAt DateTime @default(now())
+  // Heartbeat for presence tracking (polling-based on serverless).
+  lastSeenAt DateTime @default(now())
   messagesSent Message[] @relation("SenderMessages")
 }
 
@@ -44,7 +47,7 @@ model Message {
   // base64 IV used for AES-GCM content encryption
   iv String
   messageType String @default("text") // text | image | voice
-  mediaFilename String? // stored encrypted blob filename in uploads/
+  mediaFilename String? // object key in Supabase Storage (encrypted blob)
   createdAt DateTime @default(now())
 
   @@index([recipientId, createdAt])

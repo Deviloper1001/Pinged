@@ -7,7 +7,6 @@ import { ChangePasswordScreen } from "@/components/auth/ChangePasswordScreen"
 import { UnlockScreen } from "@/components/auth/UnlockScreen"
 import { ChatApp } from "@/components/chat/ChatApp"
 import { Logo } from "@/components/brand"
-import { disconnectSocket } from "@/lib/socket-client"
 import { clearCrypto } from "@/lib/crypto-session"
 
 export default function Home() {
@@ -18,10 +17,9 @@ export default function Home() {
     void init()
   }, [init])
 
-  // clean up socket + crypto on full unmount
+  // clear crypto keys on full unmount
   useEffect(() => {
     return () => {
-      disconnectSocket()
       clearCrypto()
     }
   }, [])

@@ -5,7 +5,7 @@ import { useChat } from "@/lib/chat-store"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { VoiceRecorder } from "./VoiceRecorder"
-import { getSocket } from "@/lib/socket-client"
+import { broadcastTyping } from "@/hooks/use-realtime"
 import { ImagePlus, SendHorizonal, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -13,6 +13,7 @@ export function MessageComposer() {
   const sendText = useChat((s) => s.sendText)
   const sendMedia = useChat((s) => s.sendMedia)
   const conv = useChat((s) => s.selectedConv)
+  const myId = useChat((s) => s.user?.id)
   const [text, setText] = useState("")
   const [sending, setSending] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -21,10 +22,9 @@ export function MessageComposer() {
   const isTypingRef = useRef(false)
 
   function emitTyping(isTyping: boolean) {
-    try {
-      getSocket().emit("typing", { conversation: conv, isTyping })
-      isTypingRef.current = isTyping
-    } catch {}
+    if (!myId) return
+    void broadcastTyping(conv, myId, isTyping)
+    isTypingRef.current = isTyping
   }
 
   function onTextChange(e: React.ChangeEvent<HTMLTextAreaElement>) {

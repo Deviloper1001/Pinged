@@ -1,14 +1,12 @@
 import { NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { getSession } from "@/lib/auth"
-import { notifyUsers } from "@/lib/socket-notify"
-import { UPLOAD_DIR } from "@/lib/uploads"
-import { promises as fs } from "fs"
-import path from "path"
+import { broadcastMessageDeleted } from "@/lib/socket-notify"
+import { deleteMediaBlob } from "@/lib/uploads"
 
 // Only the sender may delete their own message. Deletion also removes the
-// stored encrypted media blob (if any) and notifies everyone who could decrypt
-// it so their clients remove it from view in real time.
+// stored encrypted media blob (if any) and broadcasts a delete event to the
+// conversation's Realtime channel so all clients remove it from view.
 export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -25,10 +23,10 @@ export async function DELETE(
     )
   }
 
-  // remove encrypted media blob from disk (best-effort)
+  // remove encrypted media blob from Supabase Storage (best-effort)
   if (msg.mediaFilename) {
     try {
-      await fs.unlink(path.join(UPLOAD_DIR, msg.mediaFilename))
+      await deleteMediaBlob(msg.mediaFilename)
     } catch {
       /* already gone */
     }
@@ -36,14 +34,11 @@ export async function DELETE(
 
   await db.message.delete({ where: { id } })
 
-  // tell every key-holder (sender + recipients) to drop it from their view
-  let targetUserIds: string[] = []
-  try {
-    targetUserIds = Object.keys(JSON.parse(msg.encryptedKeys))
-  } catch {
-    targetUserIds = [session.id]
-  }
-  await notifyUsers(targetUserIds, "message-deleted", {
+  // broadcast to the conversation channel so every participant removes it
+  const channel = msg.isGroup
+    ? "everyone"
+    : `dm:${[msg.senderId, msg.recipientId!].sort().join(":")}`
+  await broadcastMessageDeleted(channel, {
     id: msg.id,
     senderId: msg.senderId,
     isGroup: msg.isGroup,

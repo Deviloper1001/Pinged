@@ -1,5 +1,4 @@
-// Thin fetch wrappers. All requests are same-origin relative paths (Caddy
-// routes based on XTransformPort only for the socket.io gateway).
+// Thin fetch wrappers. All requests are same-origin relative paths.
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
     credentials: "include",
