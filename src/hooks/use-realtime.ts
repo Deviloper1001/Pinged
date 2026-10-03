@@ -28,6 +28,22 @@ type Handlers = {
  * On Vercel there's no long-lived socket connection, so after each API write
  * the server broadcasts to the relevant channel; this hook receives it.
  */
+
+// Module-level cache of subscribed channels so broadcastTyping can reuse the
+// already-joined channel instead of creating (and sending before join on) a
+// new one each keystroke — which was causing the "Realtime send() is
+// automatically falling back to REST API" deprecation warning.
+const subscribedChannels = new Map<string, ReturnType<typeof supabaseBrowser.channel>>()
+
+function channelNameFor(conv: string, myId: string): string | null {
+  if (conv === "everyone") return "everyone"
+  if (conv.startsWith("dm:")) {
+    const otherId = conv.slice(3)
+    return `dm:${[myId, otherId].sort().join(":")}`
+  }
+  return null
+}
+
 export function useRealtime(h: Handlers) {
   const hRef = useRef(h)
   // Update the ref inside an effect so it's never mutated during render.
@@ -41,15 +57,8 @@ export function useRealtime(h: Handlers) {
     const myId = hRef.current.myId
     if (!myId) return
 
-    let channelName: string
-    if (conv === "everyone") {
-      channelName = "everyone"
-    } else if (conv.startsWith("dm:")) {
-      const otherId = conv.slice(3)
-      channelName = `dm:${[myId, otherId].sort().join(":")}`
-    } else {
-      return
-    }
+    const channelName = channelNameFor(conv, myId)
+    if (!channelName) return
 
     const ch = supabaseBrowser.channel(channelName)
     ch.on("broadcast", { event: "message" }, (res) => {
@@ -62,8 +71,11 @@ export function useRealtime(h: Handlers) {
       hRef.current.onTyping(res.payload as { userId: string; conversation: string; isTyping: boolean })
     })
     ch.subscribe()
+    // cache it so broadcastTyping reuses the joined channel
+    subscribedChannels.set(channelName, ch)
 
     return () => {
+      subscribedChannels.delete(channelName)
       supabaseBrowser.removeChannel(ch)
     }
   }, [h.activeConv, h.myId])
@@ -81,26 +93,23 @@ export function useRealtime(h: Handlers) {
   }, [])
 }
 
-/** Broadcast a typing indicator to the active conversation channel. */
+/**
+ * Broadcast a typing indicator to the active conversation channel.
+ * Reuses the already-subscribed channel from useRealtime (so no REST fallback
+ * warning + much lower latency since the WebSocket is already joined).
+ */
 export async function broadcastTyping(
   conversation: string,
   myId: string,
   isTyping: boolean,
 ) {
-  let channelName: string
-  if (conversation === "everyone") {
-    channelName = "everyone"
-  } else if (conversation.startsWith("dm:")) {
-    const otherId = conversation.slice(3)
-    channelName = `dm:${[myId, otherId].sort().join(":")}`
-  } else {
-    return
-  }
-  const ch = supabaseBrowser.channel(channelName)
+  const channelName = channelNameFor(conversation, myId)
+  if (!channelName) return
+  const ch = subscribedChannels.get(channelName)
+  if (!ch) return // channel not subscribed (e.g. not viewing this conv) — skip
   await ch.send({
     type: "broadcast",
     event: "typing",
     payload: { userId: myId, conversation, isTyping },
   })
-  supabaseBrowser.removeChannel(ch)
 }

@@ -5,6 +5,10 @@ import { getSupabaseAdmin } from "@/lib/supabase-server"
  * to the channel receive it instantly. Used for real-time message delivery,
  * presence, and typing indicators on Vercel (serverless — no long-lived socket
  * connection is possible, so we broadcast via Supabase after each write).
+ *
+ * The channel is subscribed and we wait for SUBSCRIBED status before sending,
+ * so the message goes out over the WebSocket (not the REST fallback). Runs in
+ * Next.js `after()` so the subscribe handshake doesn't block the HTTP response.
  */
 
 export async function broadcast(
@@ -15,6 +19,28 @@ export async function broadcast(
   try {
     const supabaseAdmin = getSupabaseAdmin()
     const ch = supabaseAdmin.channel(channel)
+
+    // Subscribe and wait until the channel is joined before sending, so we
+    // push the broadcast through the WebSocket instead of the deprecated REST
+    // fallback. Give up after 5s to avoid hanging serverless functions.
+    await new Promise<void>((resolve) => {
+      let settled = false
+      const t = setTimeout(() => {
+        if (!settled) {
+          settled = true
+          resolve() // timeout — send anyway (will REST-fallback, which still works)
+        }
+      }, 5000)
+      ch.subscribe((status) => {
+        if (settled) return
+        if (status === "SUBSCRIBED" || status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          settled = true
+          clearTimeout(t)
+          resolve()
+        }
+      })
+    })
+
     await ch.send({ type: "broadcast", event, payload })
     supabaseAdmin.removeChannel(ch)
   } catch (e) {
