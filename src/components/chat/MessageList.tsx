@@ -65,7 +65,7 @@ function MessageBubble({
       <div className={cn("relative flex items-end gap-1.5 min-w-0", mine ? "flex-row-reverse" : "flex-row")}>
         <div
           className={cn(
-            "min-w-0 max-w-[62.5vw] sm:max-w-[62.5%] px-4 py-2.5 rounded-3xl text-[15px] leading-snug break-words shadow-sm",
+            "min-w-0 max-w-[62.5vw] px-4 py-2.5 rounded-3xl text-[15px] leading-snug break-words shadow-sm",
             mine && "touch-callout-none",
             msg.pending && "opacity-60",
             mine

@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   description:
     "End-to-end encrypted messaging for small friend groups. Admin-only sign-ups, image & voice support, and zero-knowledge message storage.",
   icons: {
-    icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
+    icon: "/logo.svg",
   },
 };
 
