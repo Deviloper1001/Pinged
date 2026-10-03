@@ -7,7 +7,7 @@ async function main() {
     console.log(`Database already has ${existing} user(s). Skipping admin seed.`)
     return
   }
-  const passwordHash = await bcrypt.hash("changeme", 10)
+  const passwordHash = await bcrypt.hash("pass", 10)
   const admin = await db.user.create({
     data: {
       username: "admin",
@@ -18,7 +18,7 @@ async function main() {
     },
   })
   console.log(`Seeded admin account: id=${admin.id}`)
-  console.log("Default admin login -> username: admin  password: changeme")
+  console.log("Default admin login -> username: admin  password: pass")
   console.log("You will be forced to change this password on first login.")
 }
 

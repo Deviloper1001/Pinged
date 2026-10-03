@@ -8,7 +8,7 @@ async function main() {
   await db.message.deleteMany()
   await db.user.deleteMany()
 
-  const passwordHash = await bcrypt.hash("changeme", 10)
+  const passwordHash = await bcrypt.hash("pass", 10)
   const admin = await db.user.create({
     data: {
       username: "admin",
@@ -18,7 +18,7 @@ async function main() {
     },
   })
   console.log(`Reset complete. Fresh admin account: id=${admin.id}`)
-  console.log("Login: admin / changeme  (you'll be forced to change it on first login)")
+  console.log("Login: admin / pass  (you'll be forced to change it on first login)")
 }
 
 main()
