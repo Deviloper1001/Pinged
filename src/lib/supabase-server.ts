@@ -14,7 +14,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js"
  * page data". At request time the env vars ARE available.
  */
 
-const MEDIA_BUCKET = "media"
+export const MEDIA_BUCKET = "media"
 
 let cached: SupabaseClient | null = null
 
